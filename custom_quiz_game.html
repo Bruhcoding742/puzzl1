@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Custom Quiz Game</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+:root {
+  --color-background-primary: #ffffff;
+  --color-background-secondary: #f5f5f4;
+  --color-background-info: #e6f1fb;
+  --color-background-success: #eaf3de;
+  --color-background-danger: #fcebeb;
+  --color-background-warning: #faeeda;
+  --color-text-primary: #1a1a1a;
+  --color-text-secondary: #6b6b6b;
+  --color-text-info: #185fa5;
+  --color-text-success: #3b6d11;
+  --color-text-danger: #a32d2d;
+  --color-border-tertiary: rgba(0,0,0,0.12);
+  --color-border-secondary: rgba(0,0,0,0.22);
+  --color-border-primary: rgba(0,0,0,0.32);
+  --color-border-success: rgba(59,109,17,0.4);
+  --color-border-danger: rgba(163,45,45,0.4);
+  --color-border-info: rgba(24,95,165,0.4);
+  --font-sans: system-ui, -apple-system, sans-serif;
+  --border-radius-md: 8px;
+  --border-radius-lg: 12px;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --color-background-primary: #1c1c1b;
+    --color-background-secondary: #252524;
+    --color-background-info: #042c53;
+    --color-background-success: #173404;
+    --color-background-danger: #501313;
+    --color-text-primary: #f0efea;
+    --color-text-secondary: #9e9d98;
+    --color-text-info: #85b7eb;
+    --color-text-success: #97c459;
+    --color-text-danger: #f09595;
+    --color-border-tertiary: rgba(255,255,255,0.12);
+    --color-border-secondary: rgba(255,255,255,0.22);
+    --color-border-success: rgba(151,196,89,0.4);
+    --color-border-danger: rgba(240,149,149,0.4);
+    --color-border-info: rgba(133,183,235,0.4);
+  }
+}
+body { font-family: var(--font-sans); color: var(--color-text-primary); background: var(--color-background-secondary); padding: 2rem 1rem; }
+#app { max-width: 640px; margin: 0 auto; }
+.card { background: var(--color-background-primary); border: 0.5px solid var(--color-border-tertiary); border-radius: var(--border-radius-lg); padding: 1.25rem; margin-bottom: 1rem; }
+input[type=text], textarea, select { width: 100%; font-family: var(--font-sans); font-size: 14px; padding: 8px 10px; border: 0.5px solid var(--color-border-secondary); border-radius: var(--border-radius-md); background: var(--color-background-primary); color: var(--color-text-primary); }
+textarea { resize: vertical; min-height: 60px; }
+button { cursor: pointer; font-family: var(--font-sans); font-size: 14px; }
+.btn { padding: 8px 16px; border-radius: var(--border-radius-md); border: 0.5px solid var(--color-border-secondary); background: transparent; color: var(--color-text-primary); }
+.btn:hover { background: var(--color-background-secondary); }
+.btn-primary { background: var(--color-text-primary); color: var(--color-background-primary); border-color: var(--color-text-primary); }
+.btn-primary:hover { opacity: 0.85; }
+.badge { display: inline-block; font-size: 12px; padding: 3px 10px; border-radius: var(--border-radius-md); font-weight: 500; }
+.badge-success { background: var(--color-background-success); color: var(--color-text-success); }
+.badge-danger { background: var(--color-background-danger); color: var(--color-text-danger); }
+.badge-info { background: var(--color-background-info); color: var(--color-text-info); }
+.answer-btn { width: 100%; text-align: left; padding: 10px 14px; border-radius: var(--border-radius-md); border: 0.5px solid var(--color-border-tertiary); background: var(--color-background-primary); color: var(--color-text-primary); font-size: 15px; margin-bottom: 8px; transition: background 0.15s; }
+.answer-btn:hover:not(:disabled) { background: var(--color-background-secondary); border-color: var(--color-border-secondary); }
+.answer-btn.correct { background: var(--color-background-success); border-color: var(--color-border-success); color: var(--color-text-success); }
+.answer-btn.wrong { background: var(--color-background-danger); border-color: var(--color-border-danger); color: var(--color-text-danger); }
+.answer-btn.reveal { background: var(--color-background-success); border-color: var(--color-border-success); color: var(--color-text-success); opacity: 0.6; }
+.progress-bar { height: 6px; background: var(--color-background-secondary); border-radius: 3px; overflow: hidden; margin-bottom: 1rem; }
+.progress-fill { height: 100%; background: var(--color-text-primary); border-radius: 3px; transition: width 0.3s; }
+</style>
+</head>
+<body>
+<div id="app"></div>
+<script>
+let state = {
+  questions: [
+    { q: 'What is the capital of France?', answers: ['London','Paris','Berlin','Madrid'], correct: 1 },
+    { q: 'How many sides does a hexagon have?', answers: ['5','6','7','8'], correct: 1 },
+    { q: 'What planet is closest to the Sun?', answers: ['Venus','Earth','Mercury','Mars'], correct: 2 },
+  ],
+  quiz: null,
+};
+
+function startQuiz() {
+  if (!state.questions.length) return;
+  state.quiz = { idx: 0, score: 0, answered: null, done: false };
+  render();
+}
+
+function answer(i) {
+  if (state.quiz.answered !== null) return;
+  const q = state.questions[state.quiz.idx];
+  const correct = i === q.correct;
+  state.quiz.answered = i;
+  if (correct) state.quiz.score++;
+  render();
+}
+
+function next() {
+  const nxt = state.quiz.idx + 1;
+  if (nxt >= state.questions.length) {
+    state.quiz.done = true;
+  } else {
+    state.quiz.idx = nxt;
+    state.quiz.answered = null;
+  }
+  render();
+}
+
+function render() {
+  const app = document.getElementById('app');
+  app.innerHTML = '';
+  renderPlay(app);
+}
+
+function renderPlay(app) {
+  if (!state.quiz || state.quiz.done === undefined) {
+    const card = document.createElement('div');
+    card.className = 'card';
+    if (!state.questions.length) {
+      card.innerHTML = '<p style="color:var(--color-text-secondary);font-size:15px;">No questions yet. Add some in the <strong>Add question</strong> tab.</p>';
+    } else {
+      card.innerHTML = `<p style="font-size:15px;color:var(--color-text-secondary);margin-bottom:1rem;">${state.questions.length} question${state.questions.length !== 1 ? 's' : ''} ready.</p><button class="btn btn-primary" id="startBtn">Start quiz</button>`;
+    }
+    app.appendChild(card);
+    const btn = document.getElementById('startBtn');
+    if (btn) btn.onclick = startQuiz;
+    return;
+  }
+
+  if (state.quiz.done) {
+    const pct = Math.round(state.quiz.score / state.questions.length * 100);
+    const card = document.createElement('div');
+    card.className = 'card';
+    card.innerHTML = `<p style="font-size:13px;color:var(--color-text-secondary);margin-bottom:.5rem;">Quiz complete</p><p style="font-size:28px;font-weight:500;margin-bottom:.25rem;">${state.quiz.score} / ${state.questions.length}</p><p style="font-size:14px;color:var(--color-text-secondary);margin-bottom:1.25rem;">${pct}% correct</p><button class="btn btn-primary" id="againBtn">Play again</button>`;
+    app.appendChild(card);
+    document.getElementById('againBtn').onclick = startQuiz;
+    return;
+  }
+
+  const q = state.questions[state.quiz.idx];
+  const prog = document.createElement('div');
+  prog.className = 'progress-bar';
+  prog.innerHTML = `<div class="progress-fill" style="width:${(state.quiz.idx / state.questions.length) * 100}%"></div>`;
+  app.appendChild(prog);
+
+  const meta = document.createElement('div');
+  meta.style = 'display:flex;justify-content:space-between;align-items:center;margin-bottom:1rem;';
+  meta.innerHTML = `<span style="font-size:13px;color:var(--color-text-secondary);">Question ${state.quiz.idx + 1} of ${state.questions.length}</span><span style="font-size:13px;color:var(--color-text-secondary);">Score: ${state.quiz.score}</span>`;
+  app.appendChild(meta);
+
+  const card = document.createElement('div');
+  card.className = 'card';
+  const qText = document.createElement('p');
+  qText.style = 'font-size:17px;font-weight:500;margin-bottom:1.25rem;line-height:1.4;';
+  qText.textContent = q.q;
+  card.appendChild(qText);
+
+  q.answers.forEach((a, i) => {
+    const btn = document.createElement('button');
+    btn.className = 'answer-btn';
+    btn.textContent = a;
+    btn.disabled = state.quiz.answered !== null;
+    if (state.quiz.answered !== null) {
+      if (i === q.correct && state.quiz.answered !== q.correct) btn.classList.add('reveal');
+      if (i === state.quiz.answered && i === q.correct) btn.classList.add('correct');
+      if (i === state.quiz.answered && i !== q.correct) btn.classList.add('wrong');
+    }
+    btn.onclick = () => answer(i);
+    card.appendChild(btn);
+  });
+
+  if (state.quiz.answered !== null) {
+    const row = document.createElement('div');
+    row.style = 'display:flex;align-items:center;justify-content:space-between;margin-top:.75rem;';
+    const badge = document.createElement('span');
+    badge.className = 'badge ' + (state.quiz.answered === q.correct ? 'badge-success' : 'badge-danger');
+    badge.textContent = state.quiz.answered === q.correct ? 'Correct' : 'Incorrect';
+    row.appendChild(badge);
+    const nb = document.createElement('button');
+    nb.className = 'btn btn-primary';
+    nb.textContent = state.quiz.idx + 1 < state.questions.length ? 'Next' : 'Finish';
+    nb.onclick = next;
+    row.appendChild(nb);
+    card.appendChild(row);
+  }
+
+  app.appendChild(card);
+}
+
+render();
+</script>
+</body>
+</html>
