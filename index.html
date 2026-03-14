@@ -74,37 +74,6 @@ function next() {
   render();
 }
 
-function saveNew() {
-  const n = state.newQ;
-  if (!n.q.trim() || n.answers.some(a => !a.trim())) return alert('Fill in all fields.');
-  if (state.editingIdx !== null) {
-    state.questions[state.editingIdx] = JSON.parse(JSON.stringify(n));
-    state.editingIdx = null;
-  } else {
-    state.questions.push(JSON.parse(JSON.stringify(n)));
-  }
-  state.newQ = { q: '', answers: ['','','',''], correct: 0 };
-  render();
-}
-
-function editQ(i) {
-  state.editingIdx = i;
-  state.newQ = JSON.parse(JSON.stringify(state.questions[i]));
-  state.tab = 'edit';
-  render();
-}
-
-function deleteQ(i) {
-  state.questions.splice(i, 1);
-  render();
-}
-
-function cancelEdit() {
-  state.editingIdx = null;
-  state.newQ = { q: '', answers: ['','','',''], correct: 0 };
-  render();
-}
-
 function render() {
   const app = document.getElementById('app');
   app.innerHTML = '';
@@ -245,17 +214,6 @@ function renderManage(app) {
 function renderEdit(app) {
   const card = document.createElement('div');
   card.className = 'card';
-
-  const ql = document.createElement('p');
-  ql.className = 'label';
-  ql.textContent = 'Question';
-  card.appendChild(ql);
-  const qi = document.createElement('textarea');
-  qi.value = state.newQ.q;
-  qi.placeholder = 'Enter your question...';
-  qi.oninput = e => { state.newQ.q = e.target.value; };
-  qi.style = 'margin-bottom:1rem;';
-  card.appendChild(qi);
 
   const al = document.createElement('p');
   al.className = 'label';
